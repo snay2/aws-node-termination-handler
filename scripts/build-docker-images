@@ -47,27 +47,33 @@ while getopts "dp:r:v:" opt; do
   esac
 done
 
-# Launch a docker buildx instance and save its name so we can terminate it later
-buildx_instance_name=$(docker buildx create --use)
 
 for os_arch in "${PLATFORMS[@]}"; do
-    os=$(echo $os_arch | cut -d'/' -f1)
-    arch=$(echo $os_arch | cut -d'/' -f2)
+  os=$(echo $os_arch | cut -d'/' -f1)
+  arch=$(echo $os_arch | cut -d'/' -f2)
 
-    img_tag="$IMAGE_REPO:$VERSION-$os-$arch"
+  img_tag="$IMAGE_REPO:$VERSION-$os-$arch"
 
-    dockerfile="$DOCKERFILE_PATH"
-    if [[ $os = "windows" ]]; then
-        dockerfile="${dockerfile}.windows"
-    fi
-
+  dockerfile="$DOCKERFILE_PATH"
+  if [[ $os = "windows" ]]; then
+    dockerfile="${dockerfile}.windows"
+    docker build \
+      --file "${dockerfile}" \
+      --build-arg GOOS=${os} \
+      --build-arg GOARCH=${arch} \
+      --build-arg GOPROXY=${GOPROXY} \
+      --tag ${img_tag} \
+      ${REPO_ROOT_PATH}
+  else
+    # Launch a docker buildx instance and save its name so we can terminate it later
+    buildx_instance_name=$(docker buildx create --use)
     docker buildx build \
-        --load \
-        --file "${dockerfile}" \
-        --build-arg GOOS=${os} \
-        --tag ${img_tag} \
-        --platform "${os_arch}" \
-        ${REPO_ROOT_PATH}
+      --load \
+      --file "${dockerfile}" \
+      --build-arg GOOS=${os} \
+      --tag ${img_tag} \
+      --platform "${os_arch}" \
+      ${REPO_ROOT_PATH}
+    docker buildx rm ${buildx_instance_name}
+  fi
 done
-
-docker buildx rm ${buildx_instance_name}
