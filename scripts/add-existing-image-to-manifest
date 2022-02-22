@@ -7,9 +7,10 @@ REPO_ROOT_PATH=$SCRIPTPATH/../
 MAKE_FILE_PATH=$REPO_ROOT_PATH/Makefile
 
 VERSION=$(make -s -f $MAKE_FILE_PATH version)
-PLATFORMS=("linux/amd64")
+EXISTING_IMAGE_VERSION=$(make -s -f $MAKE_FILE_PATH version)
+PLATFORMS=("windows/amd64")
 MANIFEST_IMAGES=()
-MANIFEST=""
+MANIFEST="true"
 DOCKER_CLI_CONFIG="$HOME/.docker/config.json"
 
 USAGE=$(cat << 'EOM'
@@ -20,12 +21,12 @@ USAGE=$(cat << 'EOM'
             -p          Platform pair list (os/architecture) [DEFAULT: linux/amd64]
             -r          IMAGE REPO: set the docker image repo
             -v          VERSION: The application version of the docker image [DEFAULT: output of `make version`]
-            -m          Create a docker manifest
+            -e          EXISTING VERSION: Version for the existing image, if different
 EOM
 )
 
 # Process our input arguments
-while getopts "mp:r:v:" opt; do
+while getopts "p:r:v:e:" opt; do
   case ${opt} in
     p ) # Platform Pairs
         IFS=',' read -ra PLATFORMS <<< "$OPTARG"
@@ -36,8 +37,8 @@ while getopts "mp:r:v:" opt; do
     v ) # Image Version
         VERSION="$OPTARG"
       ;;
-    m ) # Docker manifest
-        MANIFEST="true"
+    e ) # Windows Image Version
+        EXISTING_IMAGE_VERSION="$OPTARG"
       ;;
     \? )
         echo "$USAGE" 1>&2
@@ -62,7 +63,6 @@ if [[ $MANIFEST == "true" ]]; then
   fi
   cat <<< "$(jq '.+{"experimental":"enabled"}' $DOCKER_CLI_CONFIG)" > $DOCKER_CLI_CONFIG
   echo "Enabled experimental CLI features to execute docker manifest commands"
-  nothing_burger=$(docker manifest rm $IMAGE_REPO:$VERSION > /dev/null ; echo $?)
   manifest_exists=$(docker manifest inspect $IMAGE_REPO:$VERSION > /dev/null ; echo $?)
   if [[ manifest_exists -eq 0 ]]; then
     echo "manifest already exists"
@@ -83,15 +83,16 @@ for os_arch in "${PLATFORMS[@]}"; do
     os=$(echo $os_arch | cut -d'/' -f1)
     arch=$(echo $os_arch | cut -d'/' -f2)
 
-    img_tag_w_platform="$IMAGE_REPO:$VERSION-$os-$arch"
+    img_tag_w_platform="$IMAGE_REPO:$EXISTING_IMAGE_VERSION-$os-$arch"
 
     if [[ $MANIFEST == "true" ]]; then
         img_tag=$img_tag_w_platform
     else
-        img_tag="$IMAGE_REPO:$VERSION"
+        img_tag="$IMAGE_REPO:$EXISTING_IMAGE_VERSION"
         docker tag $img_tag_w_platform $img_tag
     fi
-    docker push $img_tag
+    # Don't push this image because it already exists
+    #docker push $img_tag
     MANIFEST_IMAGES+=("$img_tag")
 done
 
@@ -110,12 +111,12 @@ if [[ $MANIFEST == "true" ]]; then
       echo "creating manifest for $updated_img"
       docker manifest create $IMAGE_REPO:$VERSION $updated_img --amend
 
-      #os_arch=$(echo ${updated_img//$IMAGE_REPO:$VERSION-/})
-      #os=$(echo $os_arch | cut -d'-' -f1)
-      #arch=$(echo $os_arch | cut -d'-' -f2)
+      os_arch=$(echo ${updated_img//$IMAGE_REPO:$VERSION-/})
+      os=$(echo $os_arch | cut -d'-' -f1)
+      arch=$(echo $os_arch | cut -d'-' -f2)
 
-      #echo "annotating manifest"
-      #docker manifest annotate $IMAGE_REPO:$VERSION $updated_img --arch $arch --os $os
+      echo "annotating manifest"
+      docker manifest annotate $IMAGE_REPO:$VERSION $updated_img --arch $arch --os $os
     done
 
     echo "pushing manifest"

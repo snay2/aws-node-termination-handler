@@ -1,5 +1,8 @@
 VERSION = $(shell git describe --tags --always --dirty)
-IMG ?= amazon/aws-node-termination-handler
+VERSION = "v1.6.1"
+#IMG ?= amazon/aws-node-termination-handler
+#IMG ?= public.ecr.aws/aws-ec2/aws-node-termination-handler
+IMG ?= public.ecr.aws/u0c8p9d8/nth-test-public
 IMG_TAG ?= ${VERSION}
 IMG_W_TAG = ${IMG}:${IMG_TAG}
 DOCKER_USERNAME ?= ""
@@ -9,7 +12,7 @@ GOARCH ?= amd64
 GOPROXY ?= "https://proxy.golang.org,direct"
 MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
-SUPPORTED_PLATFORMS ?= "linux/amd64,linux/arm64,linux/arm"
+SUPPORTED_PLATFORMS ?= "linux/amd64,linux/arm64"
 
 $(shell mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod)
 
@@ -34,11 +37,15 @@ docker-push:
 	docker push ${IMG_W_TAG}
 
 build-docker-images:
-	${MAKEFILE_PATH}/scripts/build-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
+	go mod tidy
+	${MAKEFILE_PATH}/scripts/build-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION} -d
 
 push-docker-images:
-	@echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+	#@echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+	aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${IMG}
 	${MAKEFILE_PATH}/scripts/push-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION} -m
+	${MAKEFILE_PATH}/scripts/add-existing-image-to-manifest -p "windows/amd64" -r ${IMG} -v ${VERSION} -e "v1.6.1"
+	${MAKEFILE_PATH}/scripts/add-existing-image-to-manifest -p "linux/arm" -r ${IMG} -v ${VERSION} -e "v1.6.1"
 
 version:
 	@echo ${VERSION}
@@ -89,7 +96,7 @@ build: compile
 
 helm-tests: helm-sync-test helm-version-sync-test helm-lint
 
-release: build-binaries build-docker-images push-docker-images generate-k8s-yaml upload-resources-to-github
+release: build-docker-images push-docker-images
 
 test: unit-test e2e-test compatibility-test license-test go-report-card-test helm-sync-test
 

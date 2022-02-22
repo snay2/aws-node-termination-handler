@@ -1,12 +1,13 @@
 # Build the manager binary
-FROM golang:1.14 as builder
+FROM --platform=$BUILDPLATFORM golang:1.14 as builder
 
 ## GOLANG env
 ARG GOPROXY="https://proxy.golang.org,direct"
 ARG GO111MODULE="on"
 ARG CGO_ENABLED=0
-ARG GOOS=linux 
-ARG GOARCH=amd64 
+ARG TARGETOS TARGETARCH
+ARG GOOS=$TARGETOS
+ARG GOARCH=$TARGETARCH
 
 # Copy go.mod and download dependencies
 WORKDIR /node-termination-handler

@@ -48,6 +48,12 @@ while getopts "dp:r:v:" opt; do
 done
 
 for os_arch in "${PLATFORMS[@]}"; do
+    buildx_already_running=$(docker buildx ls | grep `docker buildx ls | grep "docker-container" | awk '{print $1}'` | grep "$os_arch" > /dev/null ; echo $?)
+    if [[ buildx_already_running -ne 0 ]]; then
+        echo "Starting docker buildx because a suitable one for $os_arch is not already running..."
+        docker buildx create --use
+    fi
+
     os=$(echo $os_arch | cut -d'/' -f1)
     arch=$(echo $os_arch | cut -d'/' -f2)
 
@@ -58,11 +64,11 @@ for os_arch in "${PLATFORMS[@]}"; do
         dockerfile="${dockerfile}.windows"
     fi
 
-    docker build \
+    docker buildx build \
+        --load \
         --file "${dockerfile}" \
-        --build-arg GOOS=${os} \
-        --build-arg GOARCH=${arch} \
         --build-arg GOPROXY=${GOPROXY} \
         --tag ${img_tag} \
+        --platform "${os_arch}" \
         ${REPO_ROOT_PATH}
 done
