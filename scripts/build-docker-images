@@ -47,6 +47,9 @@ while getopts "dp:r:v:" opt; do
   esac
 done
 
+# Launch a docker buildx instance and save its name so we can terminate it later
+buildx_instance_name=$(docker buildx create --use)
+
 for os_arch in "${PLATFORMS[@]}"; do
     os=$(echo $os_arch | cut -d'/' -f1)
     arch=$(echo $os_arch | cut -d'/' -f2)
@@ -58,11 +61,13 @@ for os_arch in "${PLATFORMS[@]}"; do
         dockerfile="${dockerfile}.windows"
     fi
 
-    docker build \
+    docker buildx build \
+        --load \
         --file "${dockerfile}" \
         --build-arg GOOS=${os} \
-        --build-arg GOARCH=${arch} \
-        --build-arg GOPROXY=${GOPROXY} \
         --tag ${img_tag} \
+        --platform "${os_arch}" \
         ${REPO_ROOT_PATH}
 done
+
+docker buildx rm ${buildx_instance_name}

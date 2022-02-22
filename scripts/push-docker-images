@@ -108,13 +108,6 @@ if [[ $MANIFEST == "true" ]]; then
       fi
       echo "creating manifest for $updated_img"
       docker manifest create $IMAGE_REPO:$VERSION $updated_img --amend
-
-      os_arch=$(echo ${updated_img//$IMAGE_REPO:$VERSION-/})
-      os=$(echo $os_arch | cut -d'-' -f1)
-      arch=$(echo $os_arch | cut -d'-' -f2)
-
-      echo "annotating manifest"
-      docker manifest annotate $IMAGE_REPO:$VERSION $updated_img --arch $arch --os $os
     done
 
     echo "pushing manifest"
