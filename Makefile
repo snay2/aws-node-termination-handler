@@ -2,8 +2,10 @@ VERSION = $(shell git describe --tags --always --dirty)
 LATEST_RELEASE_TAG=$(shell git describe --tags --abbrev=0)
 PREVIOUS_RELEASE_TAG=$(shell git describe --abbrev=0 --tags `git rev-list --tags --skip=1  --max-count=1`)
 REPO_FULL_NAME=aws/aws-node-termination-handler
-ECR_REGISTRY ?= public.ecr.aws/aws-ec2
-ECR_REPO ?= ${ECR_REGISTRY}/aws-node-termination-handler
+#ECR_REGISTRY ?= public.ecr.aws/aws-ec2
+#ECR_REPO ?= ${ECR_REGISTRY}/aws-node-termination-handler
+ECR_REGISTRY ?= public.ecr.aws/u0c8p9d8
+ECR_REPO ?= ${ECR_REGISTRY}/nth-test-public
 IMG ?= amazon/aws-node-termination-handler
 IMG_TAG ?= ${VERSION}
 IMG_W_TAG = ${IMG}:${IMG_TAG}
@@ -12,7 +14,8 @@ GOARCH ?= amd64
 GOPROXY ?= "https://proxy.golang.org,direct"
 MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
-SUPPORTED_PLATFORMS_LINUX ?= "linux/amd64,linux/arm64,linux/arm,darwin/amd64"
+#SUPPORTED_PLATFORMS_LINUX ?= "linux/amd64,linux/arm64,linux/arm,darwin/amd64"
+SUPPORTED_PLATFORMS_LINUX ?= "linux/amd64,linux/arm64"
 SUPPORTED_PLATFORMS_WINDOWS ?= "windows/amd64"
 BINARY_NAME ?= "node-termination-handler"
 
@@ -136,9 +139,10 @@ helm-tests: helm-version-sync-test helm-lint helm-validate-eks-versions
 eks-cluster-test:
 	${MAKEFILE_PATH}/test/eks-cluster-test/run-test
 
-release: build-binaries build-docker-images push-docker-images generate-k8s-yaml upload-resources-to-github
+#release: build-binaries build-docker-images push-docker-images generate-k8s-yaml upload-resources-to-github
+release: build-docker-images push-docker-images
 
-release-windows: build-binaries-windows build-docker-images-windows push-docker-images-windows upload-resources-to-github-windows
+release-windows: build-binaries-windows build-docker-images-windows push-docker-images-windows
 
 test: spellcheck shellcheck unit-test e2e-test compatibility-test license-test go-linter helm-sync-test helm-version-sync-test helm-lint
 
