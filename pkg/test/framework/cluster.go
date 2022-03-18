@@ -1,55 +1,31 @@
-package framework
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may
+// not use this file except in compliance with the License. A copy of the
+// License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied. See the License for the specific language governing
+// permissions and limitations under the License
 
-import "fmt"
+package framework
 
 // TODO golang naming conventions for packages?
 
 // Functions to create and manipulate clusters for end-to-end tests
 
-type Cluster struct {
-	Provisioned      bool
-	NTHInstalled     bool
-	TestPodInstalled bool
+type Cluster interface {
+	Provision() error
+	Reset() error
+	TearDown() error
+	InstallNodeTerminationHandler() error
+	DeployTestPod(p *Pod) error
+	SimulateITN(n *Node) error
 }
-
-type Pod struct{}
-
-type Node struct{}
-
-// TODO golang naming conventions for constructors
-func NewCluster() *Cluster {
-	return &Cluster{}
-}
-
-func (c *Cluster) Provision() error {
-	c.Provisioned = true
-	fmt.Println("Provisioned the cluster!")
-	return nil
-}
-
-// TODO polymorphism/inheritance--does it make sense to do?
-// TODO Declare an interface that has these kinds of operations on it
-func (c *Cluster) TearDown() error {
-	c.Provisioned = false
-	fmt.Println("Tore down the cluster")
-	return nil
-}
-
-func (c *Cluster) InstallNodeTerminationHandler() (*Pod, *Node, error) {
-	c.NTHInstalled = true
-	fmt.Println("NTH installed")
-	return &Pod{}, &Node{}, nil
-}
-
-func (c *Cluster) DeployTestPod(p *Pod) (*Node, error) {
-	c.TestPodInstalled = true
-	fmt.Println("Test pod deployed")
-	return &Node{}, nil
-}
-
-func (c *Cluster) SimulateITN(n *Node) error {
-	fmt.Println("Simulating an ITN")
-	return nil
-}
+type Pod interface{}
+type Node interface{}
 
 // TODO golang library for XUnit output
