@@ -68,6 +68,9 @@ image:
 binary-name:
 	@echo ${BINARY_NAME}
 
+new-test:
+	go run ${MAKEFILE_PATH}/test/k8s-local-cluster-test/run-k8s-local-cluster-test.go
+
 e2e-test:
 	${MAKEFILE_PATH}/test/k8s-local-cluster-test/run-test -b e2e-test -d
 
