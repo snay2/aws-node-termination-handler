@@ -28,7 +28,7 @@ const K8_1_17 string = "kindest/node:v1.17.17@sha256:66f1d0d91a88b8a001811e2f105
 
 func NewLocalKindCluster() (*LocalKindCluster, error) {
 	fmt.Println("Created a new local Kind cluster object")
-	return &LocalKindCluster{Name: "testcluster"}, nil
+	return &LocalKindCluster{Name: GenerateUniqueName("testcluster")}, nil
 }
 
 type LocalKindCluster struct {
