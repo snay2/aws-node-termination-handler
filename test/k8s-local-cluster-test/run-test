@@ -276,7 +276,7 @@ for assert_script in $ASSERTION_SCRIPTS; do
   assert_start=$(date +%s)
   $assert_script
   assert_end=$(date +%s)
-  echo "⏰ Took $((assert_end - assert_start))sec"
+  echo "⏰ Took $((assert_end - assert_start)) sec to run test $(basename "$assert_script")"
   POD_ID=$(get_nth_worker_pod || :)
   kubectl logs "$POD_ID" --namespace kube-system || :
   ## Resets cluster to run another test on the same cluster
