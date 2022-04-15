@@ -21,6 +21,7 @@ import (
 )
 
 func main() {
+	// TODO Take k8s version via command-line arguments and build a cluster with that version
 	cluster, err := f.NewLocalKindCluster()
 	if err != nil {
 		log.Fatal(err)
