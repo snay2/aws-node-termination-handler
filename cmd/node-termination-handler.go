@@ -15,6 +15,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
@@ -56,6 +58,10 @@ const (
 )
 
 func main() {
+
+	go func(i ...interface{}) {
+		fmt.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	// Zerolog uses json formatting by default, so change that to a human-readable format instead
 	log.Logger = log.Output(logging.RoutingLevelWriter{
 		Writer:    &zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: timeFormat, NoColor: true},
